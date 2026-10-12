@@ -1,5 +1,5 @@
 // Offline cache. Po každé úpravě aplikace zvyš číslo verze, ať se telefon stáhne novou.
-const VERSION = "valec-v3";
+const VERSION = "valec-v4";
 const FILES = ["./", "index.html", "manifest.webmanifest",
   "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png"];
 self.addEventListener("install", e => {

@@ -92,7 +92,8 @@
   .quiet{font-size:12px; color:var(--muted); opacity:.6; margin:22px 2px 0; font-variant-numeric:tabular-nums}
 
   /* button pad */
-  #pad{grid-template-columns:repeat(var(--n),1fr); grid-template-rows:repeat(var(--n),1fr); gap:var(--gap); padding:var(--gap)}
+  #pad{grid-template-columns:repeat(var(--n),var(--cell)); grid-template-rows:repeat(var(--n),var(--cell)); gap:var(--gap); padding:var(--gap);
+    justify-content:center; align-content:center; --cell:60px}
   .pb{--lc:255,184,108; position:relative; border-radius:var(--r); border:var(--bw) solid; padding:0; margin:0; cursor:pointer;
     transition:transform .07s, box-shadow .07s; touch-action:none}
   #pad.dark .pb{background:linear-gradient(180deg,#484b51,#35373c); border-color:#696c72;
@@ -137,10 +138,8 @@
     <h2>Co se točí</h2>
     <div id="mats"></div>
     <div id="tintBox"><h2 id="tintTitle">Barva</h2><div class="swatches" id="tintSw"></div></div>
-    <h2>Pohled</h2>
-    <div class="seg wide" data-k="view"><button data-v="3d">Prostorový</button><button data-v="flat">Zpředu</button></div>
-    <h2>Při rychlém točení odlétá</h2>
-    <div class="seg wide" data-k="fx"><button data-v="none">Nic</button><button data-v="sparks">Jiskry</button><button data-v="glitter">Třpytky</button><button data-v="dust">Prach</button></div>
+    <div id="fxBox"><h2>Při rychlém točení odlétá</h2>
+    <div class="seg wide" data-k="fx"><button data-v="none">Nic</button><button data-v="sparks">Jiskry</button><button data-v="glitter">Třpytky</button><button data-v="dust">Prach</button></div></div>
   </div>
 
   <div data-for="pad">
@@ -187,28 +186,28 @@ const MATERIALS = [
     snd:{src:"brown", f:[["lowpass",340,.7],["peaking",120,2.5,8]], g:.55, pitch:.5, bump:"knock", bumpG:.5}},
   {id:"wood", group:"warm", name:"Dub", note:"lehký, hladký", mass:2.2, k:0.9, c:120, gloss:.12, shine:20,
     snd:{src:"brown", f:[["bandpass",520,.9]], g:.4, pitch:.8}},
-  {id:"cork", group:"warm", name:"Korek", note:"lehoučký, pruží", mass:1.4, k:1.3, c:150, gloss:.02, shine:8,
+  {id:"cork", fx:"crumbs", group:"warm", name:"Korek", note:"lehoučký, pruží", mass:1.4, k:1.3, c:150, gloss:.02, shine:8,
     snd:{src:"white", f:[["bandpass",1500,.8],["lowpass",3500,.7]], g:.14, pitch:.5, crackle:.25}},
   {id:"felt", group:"warm", name:"Plsť", note:"měkká, tiše šustí", mass:2, k:2.2, c:260, gloss:0, shine:8,
     snd:{src:"white", f:[["highpass",1800,.5],["lowpass",5000,.6]], g:.09, pitch:.3}},
   {id:"leather", group:"warm", name:"Kůže", note:"koňak, se švem", mass:3, k:1.4, c:160, gloss:.16, shine:16,
     snd:{src:"brown", f:[["bandpass",650,.8]], g:.25, pitch:.6}},
-  {id:"rope", group:"warm", name:"Juta", note:"navinutý provaz", face:"wood", mass:3, k:1.5, c:180, gloss:0, shine:8, bumps:64,
+  {id:"rope", fx:"fibers", group:"warm", name:"Juta", note:"navinutý provaz", face:"wood", mass:3, k:1.5, c:180, gloss:0, shine:8, bumps:64,
     snd:{src:"brown", f:[["bandpass",800,.7]], g:.25, pitch:.7, bump:"fiber", bumpG:.25}},
   {id:"rubber", group:"warm", name:"Guma", note:"lepí se, hned stojí", mass:1.2, k:3.2, c:520, gloss:.06, shine:12, bumps:48,
     snd:{src:"brown", f:[["lowpass",160,.7]], g:.5, pitch:.4, bump:"thud", bumpG:.35}},
 
-  {id:"granite", group:"stone", stone:true, name:"Žula šedá", note:"těžká, dlouho dobíhá", mass:6, k:0.35, c:40, gloss:.22, shine:40,
+  {id:"granite", fx:"stone", group:"stone", stone:true, name:"Žula šedá", note:"těžká, dlouho dobíhá", mass:6, k:0.35, c:40, gloss:.22, shine:40,
     snd:{src:"white", f:[["bandpass",520,.8]], g:.4, pitch:1, crackle:.5}},
-  {id:"granite-red", group:"stone", stone:true, name:"Žula růžová", note:"těžká, hrubší", mass:6.5, k:0.45, c:60, gloss:.18, shine:30,
+  {id:"granite-red", fx:"stone", group:"stone", stone:true, name:"Žula růžová", note:"těžká, hrubší", mass:6.5, k:0.45, c:60, gloss:.18, shine:30,
     snd:{src:"white", f:[["bandpass",460,.8]], g:.45, pitch:1, crackle:.7}},
-  {id:"sandstone", group:"stone", stone:true, name:"Pískovec", note:"teplý kámen, písčitý", mass:5.5, k:0.7, c:110, gloss:.02, shine:8,
+  {id:"sandstone", fx:"sand", group:"stone", stone:true, name:"Pískovec", note:"teplý kámen, písčitý", mass:5.5, k:0.7, c:110, gloss:.02, shine:8,
     snd:{src:"white", f:[["bandpass",900,.6]], g:.35, pitch:.9, crackle:1.2}},
-  {id:"marble", group:"stone", stone:true, name:"Mramor", note:"leštěný, klouže", mass:5, k:0.28, c:30, gloss:.45, shine:70,
+  {id:"marble", fx:"powder", group:"stone", stone:true, name:"Mramor", note:"leštěný, klouže", mass:5, k:0.28, c:30, gloss:.45, shine:70,
     snd:{src:"white", f:[["bandpass",1100,1.4]], g:.2, pitch:.8, crackle:.08}},
-  {id:"concrete", group:"stone", stone:true, name:"Beton", note:"drhne, rychle staví", mass:7, k:1.0, c:230, gloss:.04, shine:10,
+  {id:"concrete", fx:"sand", group:"stone", stone:true, name:"Beton", note:"drhne, rychle staví", mass:7, k:1.0, c:230, gloss:.04, shine:10,
     snd:{src:"white", f:[["bandpass",320,.6]], g:.55, pitch:1, crackle:1}},
-  {id:"steel", group:"stone", name:"Ocel", note:"na ložiskách, točí se věčně", mass:8, k:0.12, c:12, gloss:.6, shine:28,
+  {id:"steel", fx:"sparks", group:"stone", name:"Ocel", note:"na ložiskách, točí se věčně", mass:8, k:0.12, c:12, gloss:.6, shine:28,
     snd:{src:"white", f:[["bandpass",2600,6]], g:.07, pitch:.6, whine:.06}},
 ];
 const GROUPS = [["color","Barevné"],["warm","Teplé a měkké"],["stone","Kámen a kov"]];
@@ -500,7 +499,7 @@ const field=document.getElementById("field"), cv=document.getElementById("cv"), 
 const busy=document.getElementById("busy");
 let dpr=1, CW=0, CH=0, RAD=1, Lc=1, SA=0, CX=0, CY=0, view3d=true, fieldRect={left:0,top:0};
 let rTh=null, rX=null, rW=null, surfPath=null;
-let tex=null, disk=null, shade=null, texCache={}, avgCol=[128,128,128], wellCol="#060708";
+let palCol=[[128,128,128]], tex=null, disk=null, shade=null, texCache={}, avgCol=[128,128,128], wellCol="#060708";
 let phase=0, vel=0, dirty=true;
 
 function buildShade(){
@@ -530,9 +529,11 @@ function ensureTexture(){
     const o=out.getContext("2d"); o.drawImage(t,0,0); o.drawImage(t,0,T); out.period=T;
     const s=document.createElement("canvas"); s.width=s.height=1; const sg=s.getContext("2d");
     sg.drawImage(t,0,0,W,T,0,0,1,1); out.avg=[...sg.getImageData(0,0,1,1).data.slice(0,3)];
+    const px=t.getContext("2d").getImageData(0,0,W,Math.min(T,64)).data; out.pal=[];   // colours for flying bits
+    for(let i=0;i<48;i++){ const j=4*Math.floor(Math.random()*px.length/4); out.pal.push([px[j],px[j+1],px[j+2]]); }
     texCache[key]=out;
   }
-  tex=texCache[key]; avgCol=tex.avg;
+  tex=texCache[key]; avgCol=tex.avg; palCol=tex.pal;
   if(view3d){
     const D=Math.max(128,Math.min(720,Math.round(RAD))), kd=D/(2*RAD/dpr), dk="disk|"+key+"|"+D;
     if(!texCache[dk]) texCache[dk]=makeDisk(m, D, kd, tint);
@@ -547,7 +548,7 @@ function resize(){
   dpr=Math.min(window.devicePixelRatio||1, 2);
   CW=Math.round(r.width*dpr); CH=Math.round(r.height*dpr);
   cv.width=CW; cv.height=CH; CX=CW/2; CY=CH/2;
-  view3d = S.view==="3d";
+  view3d = false;
   if(view3d){
     const a=.24; SA=Math.sin(a); const ca=Math.cos(a), span=CW*.86;
     RAD=Math.min(CH*.44, span/(2*SA + .8*ca));
@@ -618,16 +619,25 @@ const fxCv=document.getElementById("fx"), fxc=fxCv.getContext("2d");
 let parts=[], emitAcc=0, fxDirty=false, fxDpr=1;
 function sizeFx(){ fxDpr=Math.min(window.devicePixelRatio||1,2); fxCv.width=innerWidth*fxDpr; fxCv.height=innerHeight*fxDpr; }
 function spawn(n){
-  const sp=Math.abs(vel), dirY = vel>0 ? -1 : 1, type=S.fx;
+  const sp=Math.abs(vel), dirY = vel>0 ? -1 : 1, mfx=fxType();
   for(let i=0;i<n && parts.length<700;i++){
     const side = Math.random()<.5 ? -1 : 1, Y=(Math.random()*2-1)*.92*RAD, w=Math.sqrt(RAD*RAD-Y*Y);
     let xc;
     if(view3d) xc = side<0 ? CX-Lc-w*SA : CX+Lc+w*SA;
     else { if(Math.abs(Y)>CH/2) continue; xc = side<0 ? 2 : CW-2; }
+    let type=mfx;
+    if(mfx==="stone") type = Math.random()<.7 ? "grit" : "dust";
+    if(mfx==="sand") type = Math.random()<.45 ? "grit" : "dust";
+    if(mfx==="powder") type = Math.random()<.2 ? "grit" : "dust";
     const p={type, x:fieldRect.left+xc/dpr, y:fieldRect.top+(CY+Y)/dpr, life:0, r:Math.random()};
     if(type==="sparks"){ p.vx=side*(80+320*p.r)*(.5+sp/2500); p.vy=dirY*sp*(.25+.55*Math.random())+(Math.random()-.5)*120; p.max=.3+.5*Math.random(); }
     else if(type==="glitter"){ p.vx=side*(40+200*p.r); p.vy=dirY*sp*(.15+.35*Math.random()); p.max=.9+.9*Math.random();
       p.hue=Math.random()*360; p.size=1.5+2.5*Math.random(); p.rot=Math.random()*6; p.spin=(Math.random()-.5)*20; }
+    else if(type==="grit"||type==="crumbs"){ const big=type==="crumbs"; p.vx=side*(60+260*p.r)*(.5+sp/2500); p.vy=dirY*sp*(.2+.5*Math.random())+(Math.random()-.5)*80;
+      p.max=.5+.6*Math.random(); p.size=big?2+2.5*Math.random():.8+1.6*Math.random(); p.rot=Math.random()*6; p.spin=(Math.random()-.5)*25;
+      p.col=palCol[Math.floor(Math.random()*palCol.length)]; }
+    else if(type==="fibers"){ p.vx=side*(30+160*p.r); p.vy=dirY*sp*(.1+.3*Math.random()); p.max=1+.8*Math.random();
+      p.size=4+6*Math.random(); p.rot=Math.random()*6; p.spin=(Math.random()-.5)*8; p.col=palCol[Math.floor(Math.random()*palCol.length)]; }
     else { p.vx=side*(20+120*p.r); p.vy=dirY*sp*(.08+.2*Math.random()); p.max=1+Math.random(); p.size=2+3*Math.random(); }
     p.vy=Math.max(-1800,Math.min(1800,p.vy));
     parts.push(p);
@@ -637,6 +647,8 @@ function stepParts(dt){
   for(const p of parts){
     p.life+=dt;
     if(p.type==="sparks"){ p.vy+=1400*dt; p.vx*=Math.exp(-.8*dt); }
+    else if(p.type==="grit"||p.type==="crumbs"){ p.vy+=(p.type==="grit"?1300:900)*dt; p.vx*=Math.exp(-.6*dt); p.rot+=p.spin*dt; }
+    else if(p.type==="fibers"){ p.vy+=260*dt; p.vx*=Math.exp(-2*dt); p.vy*=Math.exp(-1.5*dt); p.rot+=p.spin*dt; }
     else if(p.type==="glitter"){ p.vy+=420*dt; p.vx*=Math.exp(-1.6*dt); p.vy*=Math.exp(-1.2*dt); p.rot+=p.spin*dt; }
     else { p.vy-=15*dt; p.vx*=Math.exp(-2.5*dt); p.vy*=Math.exp(-2.5*dt); p.size+=10*dt; }
     p.x+=p.vx*dt; p.y+=p.vy*dt;
@@ -654,6 +666,12 @@ function drawParts(){
       fxc.globalCompositeOperation="lighter";
       fxc.strokeStyle=`rgba(255,${Math.round(140+110*t)},${Math.round(60*t*t)},${t})`; fxc.lineWidth=1.6;
       fxc.beginPath(); fxc.moveTo(p.x,p.y); fxc.lineTo(p.x-p.vx*.022,p.y-p.vy*.022); fxc.stroke();
+    } else if(p.type==="grit"||p.type==="crumbs"||p.type==="fibers"){
+      fxc.globalCompositeOperation="source-over";
+      const c=p.col; fxc.fillStyle=`rgba(${c[0]},${c[1]},${c[2]},${Math.min(1,t*1.6)})`;
+      fxc.save(); fxc.translate(p.x,p.y); fxc.rotate(p.rot);
+      if(p.type==="fibers") fxc.fillRect(-p.size/2,-.45,p.size,.9); else fxc.fillRect(-p.size/2,-p.size*.35,p.size,p.size*.7);
+      fxc.restore();
     } else if(p.type==="glitter"){
       fxc.globalCompositeOperation="lighter";
       const tw=.45+.55*Math.abs(Math.sin(p.life*14+p.r*9));
@@ -667,6 +685,9 @@ function drawParts(){
   }
   fxc.globalCompositeOperation="source-over";
 }
+
+// what flies off: colour wheel = user's choice, other materials = their own bits (or nothing)
+function fxType(){ const m=matById(S.mat); if(m.id==="solid") return S.fx==="none"?null:S.fx; return m.fx||null; }
 
 /* ---------------- wheel input ---------------- */
 let dragging=false, pid=null, lastY=0, accDy=0, fingerV=0;
@@ -774,7 +795,7 @@ function frame(now){
     if(whine){ whine.o.frequency.setTargetAtTime(180+sp*.22, t, .05); whine.g.gain.setTargetAtTime(S.sound? sn.whine*Math.min(1,sp/600):0, t, .08); }
   }
   // particles: only when spinning fast
-  if(roll && S.fx!=="none" && sp>280){ emitAcc += dt*(sp-280)*.12; const n=Math.floor(emitAcc); if(n){ emitAcc-=n; spawn(n); } }
+  if(roll && fxType() && sp>280){ emitAcc += dt*(sp-280)*.12; const n=Math.floor(emitAcc); if(n){ emitAcc-=n; spawn(n); } }
   if(parts.length || fxDirty){ stepParts(dt); drawParts(); fxDirty=parts.length>0; }
   if(roll && dirty){ draw(); dirty=false; }
   if(sheetOpen && now-lastStatsAt>300){ lastStatsAt=now; showStats(); }
@@ -795,7 +816,10 @@ function buildPad(){
   requestAnimationFrame(sizePad);
 }
 function sizePad(){
-  const n=+S.grid, cell=Math.min(pad.clientWidth, pad.clientHeight)/n;
+  const n=+S.grid, cs=getComputedStyle(pad), gap=parseFloat(cs.getPropertyValue("--gap"))||10;
+  const room=Math.min(pad.clientWidth, pad.clientHeight) - gap*2 - gap*(n-1);
+  const cell=Math.floor(room/n);
+  pad.style.setProperty("--cell", cell+"px");
   pad.style.setProperty("--r", Math.round(cell*.2)+"px");
 }
 function lightColor(){
@@ -912,6 +936,7 @@ swatchRow(document.getElementById("lightSw"), LIGHTS, ()=>S.light, v=>{ S.light=
 function applyMat(){
   const m=matById(S.mat);
   document.getElementById("tintBox").style.display = m.tint ? "" : "none";
+  document.getElementById("fxBox").style.display = m.id==="solid" ? "" : "none";
   document.getElementById("tintTitle").textContent = m.id==="velvet" ? "Barva sametu" : "Barva kola";
   if(m.tint) renderTint();
   buildChain();
