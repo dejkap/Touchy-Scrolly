@@ -1,0 +1,618 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Válec</title>
+<meta name="theme-color" content="#0d0e10">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Válec">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>
+  :root{
+    --bg:#0d0e10; --panel:#17191c; --line:#2a2d32; --text:#e8e6e1; --muted:#8b8f96; --accent:#d9c7a3;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  html,body{margin:0; height:100%; background:var(--bg); color:var(--text);
+    font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    overflow:hidden; overscroll-behavior:none; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none}
+  body{position:fixed; inset:0}
+  #app{position:absolute; inset:0;
+    padding: calc(env(safe-area-inset-top) + 56px) calc(env(safe-area-inset-right) + 14px)
+             calc(env(safe-area-inset-bottom) + 28px) calc(env(safe-area-inset-left) + 14px);
+    display:flex}
+  /* housing around the roller */
+  #housing{flex:1; position:relative; border-radius:22px; padding:10px;
+    background:linear-gradient(180deg,#1d1f23,#121316);
+    box-shadow: 0 1px 0 #2c2f34 inset, 0 -1px 0 #08090a inset, 0 20px 40px rgba(0,0,0,.5)}
+  #field{position:absolute; inset:10px; border-radius:14px; overflow:hidden; background:#000;
+    touch-action:none; cursor:grab}
+  #field.drag{cursor:grabbing}
+  #cv{position:absolute; inset:0; width:100%; height:100%; display:block}
+  /* end caps: darken left/right edges like the roller sits in a slot */
+  #field::after{content:""; position:absolute; inset:0; pointer-events:none; border-radius:14px;
+    box-shadow: inset 14px 0 18px -10px rgba(0,0,0,.75), inset -14px 0 18px -10px rgba(0,0,0,.75),
+                inset 0 0 0 1px rgba(0,0,0,.6)}
+
+  #top{position:absolute; top:calc(env(safe-area-inset-top) + 8px); left:calc(env(safe-area-inset-left) + 14px);
+    right:calc(env(safe-area-inset-right) + 14px); height:40px; z-index:2; display:flex; align-items:center; justify-content:space-between}
+  #matName{font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted)}
+  .quiet{font-size:12px; color:#5d6168; margin:18px 2px 0; font-variant-numeric:tabular-nums}
+  .iconbtn{width:40px; height:40px; border-radius:12px; border:1px solid var(--line); background:var(--panel);
+    color:var(--text); display:grid; place-items:center; padding:0; cursor:pointer}
+  .iconbtn svg{width:20px; height:20px}
+
+  /* settings sheet */
+  #scrim{position:fixed; inset:0; background:rgba(0,0,0,.45); opacity:0; pointer-events:none; transition:opacity .2s}
+  #sheet{position:fixed; left:0; right:0; bottom:0; max-height:82%; overflow:auto;
+    background:var(--panel); border-top:1px solid var(--line); border-radius:20px 20px 0 0;
+    padding:10px 18px calc(env(safe-area-inset-bottom) + 20px);
+    transform:translateY(105%); transition:transform .25s cubic-bezier(.2,.8,.2,1)}
+  body.open #scrim{opacity:1; pointer-events:auto}
+  body.open #sheet{transform:none}
+  .grab{width:40px; height:4px; border-radius:2px; background:#3a3d43; margin:2px auto 12px}
+  h2{font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); font-weight:600; margin:14px 0 10px}
+  #mats{display:grid; grid-template-columns:repeat(auto-fill,minmax(92px,1fr)); gap:10px}
+  #mats h3{grid-column:1/-1; margin:6px 2px -2px; font-size:12px; font-weight:500; color:var(--muted)}
+  .mat{border:1px solid var(--line); border-radius:14px; padding:6px; background:#111215; color:var(--text);
+    text-align:left; cursor:pointer; font:inherit}
+  .mat canvas{width:100%; aspect-ratio:1; border-radius:9px; display:block; background:#222}
+  .mat b{display:block; font-size:13px; font-weight:600; margin:6px 2px 0}
+  .mat small{display:block; font-size:11px; color:var(--muted); margin:0 2px 2px}
+  .mat[aria-pressed="true"]{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent)}
+  .row{display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-top:1px solid var(--line)}
+  .row:first-of-type{border-top:0}
+  .row span small{display:block; color:var(--muted); font-size:12px}
+  .sw{appearance:none; -webkit-appearance:none; width:48px; height:28px; border-radius:14px; background:#33363c;
+    position:relative; cursor:pointer; transition:background .15s; flex:none; margin:0}
+  .sw::after{content:""; position:absolute; top:3px; left:3px; width:22px; height:22px; border-radius:50%; background:#fff; transition:transform .15s}
+  .sw:checked{background:#a8926a}
+  .sw:checked::after{transform:translateX(20px)}
+  #busy{position:absolute; inset:0; display:grid; place-items:center; color:var(--muted); font-size:13px;
+    letter-spacing:.08em; text-transform:uppercase; pointer-events:none}
+</style>
+</head>
+<body>
+<div id="top">
+  <span id="matName"></span>
+  <button class="iconbtn" id="gear" aria-label="Nastavení">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>
+  </button>
+</div>
+
+<main id="app">
+  <div id="housing">
+    <div id="field"><canvas id="cv"></canvas><div id="busy">Tesám…</div></div>
+  </div>
+</main>
+
+<div id="scrim"></div>
+<section id="sheet" aria-label="Nastavení">
+  <div class="grab"></div>
+  <h2>Co se točí</h2>
+  <div id="mats"></div>
+  <h2>Pocit</h2>
+  <label class="row"><span>Zvuk<small>každý materiál zní po svém</small></span><input type="checkbox" class="sw" data-k="sound"></label>
+  <label class="row"><span>Cvakání<small>jemná aretace jako u kolečka myši</small></span><input type="checkbox" class="sw" data-k="ticks"></label>
+  <label class="row"><span>Vibrace<small>jen Android – iPhone je z webu nepovolí</small></span><input type="checkbox" class="sw" data-k="haptics"></label>
+  <p class="quiet">Otočeno od spuštění: <span id="count">0</span> ot.</p>
+</section>
+
+<script>
+"use strict";
+/* ================================================================
+   Materials: look (texture generator) + feel (physics) + sound
+   mass  – how slowly it reacts to the finger (inertia)
+   k     – viscous drag after release (1/s)
+   c     – dry friction after release (px/s²) – makes it stop "with a grind"
+   gloss – specular strength, shine – highlight tightness
+   ================================================================ */
+/* snd = how it sounds:
+     src   – "white" (grainy, gritty) or "brown" (soft, low, rumbly) noise
+     f     – list of filters [type, freq, Q]; freq rises with speed by `pitch`
+     g     – loudness
+     crackle – random grains (sand/gravel feel), 0 = none
+     bump  – sound of seams passing by (barrel staves, rope strands, rubber ribs): "knock" | "thud" | "fiber"
+     whine – bearing tone (steel)
+   bumps = how many seams per revolution (texture is drawn to match) */
+const MATERIALS = [
+  // —— warm & soft ——
+  {id:"barrel", group:"warm", name:"Sud", note:"dubové dužiny, obruče", mass:5, k:0.6, c:70, gloss:.1, shine:18, bumps:18,
+    snd:{src:"brown", f:[["lowpass",340,.7],["peaking",120,2.5,8]], g:.55, pitch:.5, bump:"knock", bumpG:.5}},
+  {id:"wood", group:"warm", name:"Dub", note:"lehký, hladký", mass:2.2, k:0.9, c:120, gloss:.12, shine:20,
+    snd:{src:"brown", f:[["bandpass",520,.9]], g:.4, pitch:.8}},
+  {id:"cork", group:"warm", name:"Korek", note:"lehoučký, pruží", mass:1.4, k:1.3, c:150, gloss:.02, shine:8,
+    snd:{src:"white", f:[["bandpass",1500,.8],["lowpass",3500,.7]], g:.14, pitch:.5, crackle:.25}},
+  {id:"felt", group:"warm", name:"Plsť", note:"měkká, tiše šustí", mass:2, k:2.2, c:260, gloss:0, shine:8,
+    snd:{src:"white", f:[["highpass",1800,.5],["lowpass",5000,.6]], g:.09, pitch:.3}},
+  {id:"velvet", group:"warm", name:"Samet", note:"hebký, s leskem", mass:2.4, k:1.8, c:200, gloss:.04, shine:10, sheen:.32,
+    snd:{src:"white", f:[["bandpass",1100,.6],["lowpass",3000,.7]], g:.08, pitch:.3}},
+  {id:"leather", group:"warm", name:"Kůže", note:"koňak, se švem", mass:3, k:1.4, c:160, gloss:.16, shine:16,
+    snd:{src:"brown", f:[["bandpass",650,.8]], g:.25, pitch:.6}},
+  {id:"rope", group:"warm", name:"Juta", note:"navinutý provaz", mass:3, k:1.5, c:180, gloss:0, shine:8, bumps:64,
+    snd:{src:"brown", f:[["bandpass",800,.7]], g:.25, pitch:.7, bump:"fiber", bumpG:.25}},
+  {id:"rubber", group:"warm", name:"Guma", note:"lepí se, hned stojí", mass:1.2, k:3.2, c:520, gloss:.06, shine:12, bumps:48,
+    snd:{src:"brown", f:[["lowpass",160,.7]], g:.5, pitch:.4, bump:"thud", bumpG:.35}},
+  // —— stone & metal ——
+  {id:"granite", group:"stone", name:"Žula šedá", note:"těžká, dlouho dobíhá", mass:6, k:0.35, c:40, gloss:.22, shine:40,
+    snd:{src:"white", f:[["bandpass",520,.8]], g:.4, pitch:1, crackle:.5}},
+  {id:"granite-red", group:"stone", name:"Žula růžová", note:"těžká, hrubší", mass:6.5, k:0.45, c:60, gloss:.18, shine:30,
+    snd:{src:"white", f:[["bandpass",460,.8]], g:.45, pitch:1, crackle:.7}},
+  {id:"sandstone", group:"stone", name:"Pískovec", note:"teplý kámen, písčitý", mass:5.5, k:0.7, c:110, gloss:.02, shine:8,
+    snd:{src:"white", f:[["bandpass",900,.6]], g:.35, pitch:.9, crackle:1.2}},
+  {id:"marble", group:"stone", name:"Mramor", note:"leštěný, klouže", mass:5, k:0.28, c:30, gloss:.45, shine:70,
+    snd:{src:"white", f:[["bandpass",1100,1.4]], g:.2, pitch:.8, crackle:.08}},
+  {id:"concrete", group:"stone", name:"Beton", note:"drhne, rychle staví", mass:7, k:1.0, c:230, gloss:.04, shine:10,
+    snd:{src:"white", f:[["bandpass",320,.6]], g:.55, pitch:1, crackle:1}},
+  {id:"steel", group:"stone", name:"Ocel", note:"na ložiskách, točí se věčně", mass:8, k:0.12, c:12, gloss:.6, shine:28,
+    snd:{src:"white", f:[["bandpass",2600,6]], g:.07, pitch:.6, whine:.06}},
+];
+const GROUPS = [["warm","Teplé a měkké"],["stone","Kámen a kov"]];
+
+/* ---------------- settings ---------------- */
+const DEFAULTS = {mat:"granite", sound:true, ticks:false, haptics:true};
+let S = {...DEFAULTS};
+try { Object.assign(S, JSON.parse(localStorage.getItem("valec-settings")||"{}")); } catch(e){}
+const save = () => { try { localStorage.setItem("valec-settings", JSON.stringify(S)); } catch(e){} };
+const matById = id => MATERIALS.find(m=>m.id===id) || MATERIALS[0];
+
+/* ---------------- tileable noise ---------------- */
+function hash(x,y,s){
+  let h = Math.imul(x,374761393) ^ Math.imul(y,668265263) ^ Math.imul(s,982451653);
+  h = Math.imul(h ^ (h>>>13), 1274126177); h ^= h>>>16;
+  return (h>>>0)/4294967296;
+}
+// value noise, periodic in y with `py` cells
+function vnoise(x,y,cw,ch,py,s){
+  const gx=x/cw, gy=y/ch, ix=Math.floor(gx), iy=Math.floor(gy);
+  let fx=gx-ix, fy=gy-iy; fx=fx*fx*(3-2*fx); fy=fy*fy*(3-2*fy);
+  const y0=((iy%py)+py)%py, y1=(y0+1)%py;
+  const a=hash(ix,y0,s), b=hash(ix+1,y0,s), c=hash(ix,y1,s), d=hash(ix+1,y1,s);
+  return a+(b-a)*fx + (c-a)*fy + (a-b-c+d)*fx*fy;
+}
+// fractal noise; cw/ch = base cell size, T = period in y
+function fbm(x,y,cw,ch,T,oct,s){
+  let sum=0, amp=1, norm=0;
+  for(let o=0;o<oct;o++){
+    const n=Math.max(1,Math.round(T/ch));
+    sum += amp*vnoise(x,y,cw,T/n,n,s+o*17); norm+=amp;
+    amp*=.5; cw/=2; ch/=2;
+  }
+  return sum/norm;
+}
+function rng(seed){ let t=seed>>>0; return ()=>{ t+=0x6D2B79F5; let r=Math.imul(t^(t>>>15),1|t); r^=r+Math.imul(r^(r>>>7),61|r); return ((r^(r>>>14))>>>0)/4294967296; }; }
+
+/* ---------------- texture generators ----------------
+   W×T canvas, tileable in y. k = texture px per CSS px (keeps grain size consistent) */
+function makeTexture(id, W, T, k){
+  const cv=document.createElement("canvas"); cv.width=W; cv.height=T;
+  const g=cv.getContext("2d");
+  const R=rng(1234 + id.length*99);
+
+  const crystals = (base, palette, density, rmin, rmax) => {
+    g.fillStyle=base; g.fillRect(0,0,W,T);
+    const n = Math.round(W*T*density/(k*k));
+    for(let i=0;i<n;i++){
+      let p=R(), col=palette[palette.length-1][1];
+      for(const [w,c] of palette){ if(p<w){col=c;break;} p-=w; }
+      const x=R()*W, y=R()*T, r=(rmin+(rmax-rmin)*R()*R())*k;
+      const sides=4+Math.floor(R()*4), rot=R()*6.28;
+      g.fillStyle=col;
+      const pts=[];
+      for(let j=0;j<sides;j++){
+        const a=rot+j*6.283/sides+(R()-.5)*.6, rr=r*(.55+.6*R());
+        pts.push(Math.cos(a)*rr, Math.sin(a)*rr*(.7+.5*R()));
+      }
+      const offs=[0]; if(y<r*2) offs.push(T); if(y>T-r*2) offs.push(-T);
+      for(const oy of offs){
+        g.beginPath();
+        for(let j=0;j<pts.length;j+=2) j?g.lineTo(x+pts[j],y+oy+pts[j+1]):g.moveTo(x+pts[j],y+oy+pts[j+1]);
+        g.fill();
+      }
+    }
+  };
+
+  // per-pixel pass helper
+  const pixels = fn => {
+    const im=g.getImageData(0,0,W,T), d=im.data;
+    for(let y=0,i=0;y<T;y++) for(let x=0;x<W;x++,i+=4) fn(x,y,d,i);
+    g.putImageData(im,0,0);
+  };
+  const clamp = v => v<0?0:v>255?255:v;
+
+  if(id==="granite"){
+    crystals("#8f8b86", [[.36,"#c9c6c0"],[.18,"#e4e1db"],[.22,"#77736e"],[.16,"#1d1c1c"],[.08,"#a59a8e"]], .045, 1.2, 4.2);
+    pixels((x,y,d,i)=>{
+      const m = .9 + .2*fbm(x,y,140*k,140*k,T,3,7);
+      const n = (hash(x,y,3)-.5)*26;
+      let sp = hash(x,y,11)>.9975 ? 70 : 0; // mica sparkle
+      d[i]=clamp(d[i]*m+n+sp); d[i+1]=clamp(d[i+1]*m+n+sp); d[i+2]=clamp(d[i+2]*m+n+sp);
+    });
+  } else if(id==="granite-red"){
+    crystals("#8a5245", [[.34,"#b8644f"],[.14,"#d48b72"],[.2,"#6d6662"],[.16,"#151313"],[.16,"#a9a19a"]], .042, 1.4, 5);
+    pixels((x,y,d,i)=>{
+      const m = .88 + .24*fbm(x,y,160*k,160*k,T,3,9);
+      const n = (hash(x,y,5)-.5)*24;
+      d[i]=clamp(d[i]*m+n); d[i+1]=clamp(d[i+1]*m+n); d[i+2]=clamp(d[i+2]*m+n);
+    });
+  } else if(id==="marble"){
+    pixels((x,y,d,i)=>{
+      const t = fbm(x,y,260*k,260*k,T,5,21);
+      const t2 = fbm(x,y,90*k,90*k,T,3,31);
+      let v = Math.abs(Math.sin(x/(120*k) + t*4.5));
+      let vein = Math.pow(1-v, 30)*.75 + Math.pow(1-Math.abs(Math.sin(x/(37*k)+t2*6)),60)*.35;
+      const cloud = .9 + .1*t - .05*t2;
+      const r=236*cloud - vein*150, gg=233*cloud - vein*148, b=227*cloud - vein*140;
+      const n=(hash(x,y,4)-.5)*6;
+      d[i]=clamp(r+n); d[i+1]=clamp(gg+n); d[i+2]=clamp(b+n); d[i+3]=255;
+    });
+  } else if(id==="concrete"){
+    pixels((x,y,d,i)=>{
+      const big = fbm(x,y,220*k,220*k,T,4,41);
+      const mid = fbm(x,y,18*k,18*k,T,2,43);
+      let v = 150 + (big-.5)*50 + (mid-.5)*30 + (hash(x,y,44)-.5)*34;
+      const pore = vnoise(x,y,3*k,3*k*T/(3*k)/Math.round(T/(3*k)) ,Math.round(T/(3*k)),45);
+      if(pore>.86) v -= (pore-.86)*500;
+      if(hash(x,y,46)>.996) v += 40;
+      d[i]=clamp(v+2); d[i+1]=clamp(v); d[i+2]=clamp(v-5); d[i+3]=255;
+    });
+  } else if(id==="wood"){
+    const rings = Math.max(4, Math.round(T/(26*k)));
+    pixels((x,y,d,i)=>{
+      const w = fbm(x,y,400*k,120*k,T,3,51);
+      const ph = (y/T)*rings*Math.PI*2 + w*7 + x/(900*k);
+      let r = .5+.5*Math.sin(ph); r = Math.pow(r, 2.4);
+      const fib = vnoise(x,y,60*k,1.6*k*T/(1.6*k)/Math.round(T/(1.6*k)),Math.round(T/(1.6*k)),53);
+      const t = r*.75 + fib*.25;
+      const n=(hash(x,y,52)-.5)*8;
+      d[i]=clamp(176 - t*80 + n); d[i+1]=clamp(124 - t*62 + n); d[i+2]=clamp(78 - t*44 + n); d[i+3]=255;
+    });
+  } else if(id==="barrel"){
+    // staves run along the axis (horizontal bands), iron hoops go round (vertical bands)
+    const st = matById(id).bumps, sh = T/st;
+    const hoops = [[.13,.05],[.87,.05]];
+    const tones = Array.from({length:st},(_,i)=>.85+.3*hash(i,0,81));
+    pixels((x,y,d,i)=>{
+      const si = Math.floor(y/sh)%st, f = (y%sh)/sh;
+      const grain = fbm(x,y,300*k,6*k,T,3,82);
+      const fib = vnoise(x,y,80*k,T/Math.round(T/(1.5*k)),Math.round(T/(1.5*k)),83);
+      let t = tones[si]*(.8+.35*grain) - fib*.12;
+      const edge = Math.min(f,1-f);                       // dark joint between staves
+      if(edge<.035) t *= .35+ .65*edge/.035;
+      let r=150*t+18, g2=100*t+8, b=58*t;
+      const u = x/W;
+      for(const [c,hw] of hoops){
+        const dx = Math.abs(u-c);
+        if(dx<hw){
+          const p = dx/hw;                                 // rounded iron band
+          let v = 52 + 38*Math.cos(p*Math.PI/2) + (hash(x,y,84)-.5)*16;
+          const rust = fbm(x,y,30*k,30*k,T,3,85);
+          r = v + rust*30; g2 = v*.92 + rust*12; b = v*.85;
+          if(p>.86) { r*=.45; g2*=.45; b*=.45; }           // shadow at hoop edge
+          const ry = (y/sh)%1;                             // one rivet per stave
+          const rx = (u-c)*W, rr = Math.hypot(rx, (ry-.5)*sh)/(2.2*k);
+          if(rr<1){ const l=1-rr; r+=55*l; g2+=50*l; b+=45*l; }
+        } else if(dx<hw*1.35){ const s=.55+.45*(dx-hw)/(hw*.35); r*=s; g2*=s; b*=s; }
+      }
+      d[i]=clamp(r); d[i+1]=clamp(g2); d[i+2]=clamp(b); d[i+3]=255;
+    });
+  } else if(id==="cork"){
+    crystals("#b48a5c", [[.35,"#c99c6a"],[.3,"#9a7048"],[.2,"#d8b384"],[.15,"#6e4c2e"]], .09, .8, 2.6);
+    pixels((x,y,d,i)=>{
+      const m = .9 + .18*fbm(x,y,60*k,60*k,T,3,91);
+      const pit = hash(x,y,92)>.993 ? -60 : 0;
+      const n=(hash(x,y,93)-.5)*18;
+      d[i]=clamp(d[i]*m+n+pit); d[i+1]=clamp(d[i+1]*m+n+pit); d[i+2]=clamp(d[i+2]*m+n*.8+pit);
+    });
+  } else if(id==="felt"){
+    pixels((x,y,d,i)=>{
+      const a = fbm(x,y,2.5*k,2.5*k,T,2,101), b2 = fbm(x,y,90*k,90*k,T,3,102);
+      const v = .86 + (a-.5)*.16 + (b2-.5)*.1 + (hash(x,y,103)-.5)*.07;
+      d[i]=clamp(176*v); d[i+1]=clamp(160*v); d[i+2]=clamp(134*v); d[i+3]=255;
+    });
+  } else if(id==="velvet"){
+    pixels((x,y,d,i)=>{
+      const a = fbm(x,y,180*k,90*k,T,3,111);            // crushed-pile shading
+      const v = .8 + (a-.5)*.5 + (hash(x,y,112)-.5)*.08;
+      d[i]=clamp(118*v); d[i+1]=clamp(30*v); d[i+2]=clamp(44*v); d[i+3]=255;
+    });
+  } else if(id==="leather"){
+    const seamY = T*.5;
+    pixels((x,y,d,i)=>{
+      const p = vnoise(x,y,4*k,T/Math.round(T/(4*k)),Math.round(T/(4*k)),121);
+      const p2 = vnoise(x,y,9*k,T/Math.round(T/(9*k)),Math.round(T/(9*k)),122);
+      const pebble = Math.pow(Math.abs(p-.5)*2,.6)*.5 + p2*.5;
+      const patina = fbm(x,y,200*k,200*k,T,3,123);
+      let v = .7 + pebble*.25 + (patina-.5)*.3;
+      let r=150*v, g2=86*v, b=44*v;
+      const dy = Math.abs(y-seamY);
+      if(dy<1.2*k){ r*=.3; g2*=.3; b*=.3; }               // seam
+      else if(dy>3.5*k && dy<6*k){                        // stitches on both sides
+        const sx = (x/(6*k))%1;
+        if(sx<.6){ r=226; g2=208; b=170; }
+      }
+      d[i]=clamp(r); d[i+1]=clamp(g2); d[i+2]=clamp(b); d[i+3]=255;
+    });
+  } else if(id==="rope"){
+    const n = matById(id).bumps, pitch = T/n, slope = .06;
+    pixels((x,y,d,i)=>{
+      let u = y + x*slope; const f = ((u/pitch)%1+1)%1;
+      const prof = Math.sin(f*Math.PI);                  // round strand
+      const twist = .5+.5*Math.sin((f*pitch - x*.9)/(1.6*k)*1.1);
+      const hair = hash(x,y,131);
+      let v = .25 + .75*Math.pow(prof,.7);
+      v *= .78 + .22*twist; v += (hair-.5)*.18;
+      d[i]=clamp(196*v); d[i+1]=clamp(160*v); d[i+2]=clamp(104*v); d[i+3]=255;
+    });
+  } else if(id==="sandstone"){
+    pixels((x,y,d,i)=>{
+      const layers = fbm(x,y,500*k,40*k,T,4,141);
+      const blot = fbm(x,y,150*k,150*k,T,3,142);
+      const sand = (hash(x,y,143)-.5)*36 + (hash(x>>1,y>>1,144)-.5)*16;
+      const v = .86 + (layers-.5)*.25 + (blot-.5)*.18;
+      d[i]=clamp(206*v+sand); d[i+1]=clamp(168*v+sand); d[i+2]=clamp(118*v+sand*.8); d[i+3]=255;
+    });
+  } else if(id==="rubber"){
+    const ribs = matById(id).bumps;
+    pixels((x,y,d,i)=>{
+      const ph = (y/T)*ribs; const f = ph-Math.floor(ph);
+      // rounded rib profile: light top edge, dark groove
+      let s = 0;
+      if(f<.18) s = -38*(1-f/.18);
+      else if(f<.32) s = 22*Math.sin((f-.18)/.14*Math.PI);
+      const n=(hash(x,y,61)-.5)*14 + (fbm(x,y,80*k,80*k,T,2,62)-.5)*10;
+      const v = 44 + s + n;
+      d[i]=clamp(v); d[i+1]=clamp(v); d[i+2]=clamp(v+3); d[i+3]=255;
+    });
+  } else if(id==="steel"){
+    const py = Math.round(T/(1*k));
+    pixels((x,y,d,i)=>{
+      const brush = vnoise(x,y,240*k, T/py, py, 71)*.6 + vnoise(x,y,60*k, T/py, py, 72)*.4;
+      const big = fbm(x,y,300*k,300*k,T,2,73);
+      const v = 158 + (brush-.5)*46 + (big-.5)*22 + (hash(x,y,74)-.5)*6;
+      d[i]=clamp(v-3); d[i+1]=clamp(v); d[i+2]=clamp(v+6); d[i+3]=255;
+    });
+  }
+  // add a few wrap rows at the bottom so row sampling never runs off the edge
+  const out=document.createElement("canvas"); out.width=W; out.height=T+3;
+  const o=out.getContext("2d"); o.drawImage(cv,0,0); o.drawImage(cv,0,T);
+  out.period=T;
+  return out;
+}
+
+/* ---------------- roller rendering ---------------- */
+const field=document.getElementById("field"), cv=document.getElementById("cv"), ctx=cv.getContext("2d",{alpha:false});
+const busy=document.getElementById("busy");
+let dpr=1, CW=0, CH=0, RAD=1, rowTheta=null, tex=null, shade=null, texCache={};
+let phase=0, vel=0;            // phase in radians, vel in CSS px/s (surface speed)
+let dirty=true;
+
+function buildShade(){
+  // 1-px-wide strip with lighting baked in, stretched over the field each frame
+  const m=matById(S.mat);
+  shade=document.createElement("canvas"); shade.width=1; shade.height=CH;
+  const g=shade.getContext("2d"), im=g.createImageData(1,CH), d=im.data;
+  // two passes stored in one strip is awkward; we keep darkness in alpha and highlight in rgb via 'source-over' of a premixed colour
+  for(let y=0;y<CH;y++){
+    const th=rowTheta[y];
+    let diff = .22 + .78*Math.max(0,Math.cos(th+.42));
+    if(m.sheen) diff = diff*(1-m.sheen*.5) + m.sheen*1.6*Math.pow(Math.abs(Math.sin(th)),2.5); // velvet: bright rims
+    let spec = m.gloss*Math.pow(Math.max(0,Math.cos(th+.21)), m.shine);
+    if(diff>1){ spec += (diff-1)*.35; diff = 1; }
+    // composite: result = tex*diff + 255*spec  → approximate with overlay colour c and alpha a
+    // tex*(1-a) + c*a  where a = 1-diff+spec, c = 255*spec/a
+    let a = Math.min(1, (1-diff) + spec);
+    let c = a>0 ? Math.min(255, 255*spec/a) : 0;
+    d[y*4]=c; d[y*4+1]=c; d[y*4+2]=c*.98; d[y*4+3]=a*255;
+  }
+  g.putImageData(im,0,0);
+}
+
+function ensureTexture(){
+  const W=Math.max(160, Math.round(CW/2));
+  const k=W/(CW/dpr);
+  const T=Math.round(2*Math.PI*RAD*W/CW);
+  const key=S.mat+"|"+W+"|"+T;
+  if(!texCache[key]) texCache[key]=makeTexture(S.mat, W, T, k);
+  tex=texCache[key];
+}
+
+function resize(){
+  const r=field.getBoundingClientRect();
+  dpr=Math.min(window.devicePixelRatio||1, 2);
+  CW=Math.max(1,Math.round(r.width*dpr)); CH=Math.max(1,Math.round(r.height*dpr));
+  cv.width=CW; cv.height=CH;
+  RAD=(CH/2)/Math.sin(1.3);               // roller a bit larger than the window → edges not fully black
+  rowTheta=new Float32Array(CH);
+  for(let y=0;y<CH;y++) rowTheta[y]=Math.asin((y+.5-CH/2)/RAD);
+  texCache={};                            // size changed → regenerate
+  busy.style.display="grid";
+  requestAnimationFrame(()=>{ ensureTexture(); buildShade(); busy.style.display="none"; dirty=true; });
+}
+
+function draw(){
+  if(!tex) return;
+  const T=tex.period, W=tex.width, f=T/(2*Math.PI);
+  ctx.imageSmoothingEnabled=true;
+  for(let y=0;y<CH;y++){
+    let v=(phase+rowTheta[y])*f; v%=T; if(v<0) v+=T;
+    ctx.drawImage(tex, 0, v, W, 1, 0, y, CW, 1.2);
+  }
+  ctx.drawImage(shade, 0, 0, 1, CH, 0, 0, CW, CH);
+}
+
+/* ---------------- input ---------------- */
+let dragging=false, pid=null, lastY=0, accDy=0, fingerV=0;
+field.addEventListener("pointerdown", e=>{
+  if(pid!==null) return;
+  pid=e.pointerId; dragging=true; lastY=e.clientY; accDy=0; fingerV=0;
+  field.setPointerCapture(pid); field.classList.add("drag");
+  audioInit();
+});
+field.addEventListener("pointermove", e=>{
+  if(e.pointerId!==pid) return;
+  accDy += e.clientY-lastY; lastY=e.clientY;
+});
+const up = e=>{ if(e.pointerId!==pid) return; dragging=false; pid=null; field.classList.remove("drag"); };
+field.addEventListener("pointerup", up); field.addEventListener("pointercancel", up);
+field.addEventListener("wheel", e=>{ e.preventDefault(); audioInit(); vel += -e.deltaY*6/matById(S.mat).mass; }, {passive:false});
+document.addEventListener("touchmove", e=>e.preventDefault(), {passive:false});
+document.getElementById("sheet").addEventListener("touchmove", e=>e.stopPropagation(), {passive:true});
+
+/* ---------------- sound ---------------- */
+let AC=null, master=null, srcs={}, chain=null, whine=null, burstBuf=null;
+function audioInit(){
+  if(AC){ if(AC.state==="suspended") AC.resume(); return; }
+  try{
+    AC=new (window.AudioContext||window.webkitAudioContext)();
+    master=AC.createGain(); master.gain.value=.9; master.connect(AC.destination);
+    const mk = brown => {
+      const len=AC.sampleRate*3, buf=AC.createBuffer(1,len,AC.sampleRate), ch=buf.getChannelData(0);
+      let last=0;
+      for(let i=0;i<len;i++){ const w=Math.random()*2-1; if(brown){ last=(last+.04*w)/1.02; ch[i]=last*4.5; } else ch[i]=w*.6; }
+      const s=AC.createBufferSource(); s.buffer=buf; s.loop=true; s.start(); return s;
+    };
+    srcs.white=mk(false); srcs.brown=mk(true);
+    burstBuf=AC.createBuffer(1,AC.sampleRate*.05,AC.sampleRate);
+    const b=burstBuf.getChannelData(0); for(let i=0;i<b.length;i++) b[i]=(Math.random()*2-1)*Math.exp(-i/(b.length*.15));
+    buildChain();
+  }catch(e){ AC=null; }
+}
+// rebuild the friction-sound chain for the current material
+function buildChain(){
+  if(!AC) return;
+  if(chain){ chain.src.disconnect(); chain.out.disconnect(); }
+  if(whine){ whine.o.stop(); whine.g.disconnect(); whine=null; }
+  const sn=matById(S.mat).snd;
+  const src=srcs[sn.src]; let node=src; const filters=[];
+  for(const [type,f,q,gain] of sn.f){
+    const fl=AC.createBiquadFilter(); fl.type=type; fl.frequency.value=f; fl.Q.value=q; if(gain) fl.gain.value=gain;
+    node.connect(fl); node=fl; filters.push([fl,f]);
+  }
+  const out=AC.createGain(); out.gain.value=0; node.connect(out); out.connect(master);
+  chain={src, out, filters};
+  if(sn.whine){
+    const o=AC.createOscillator(), g=AC.createGain(); o.type="sine"; o.frequency.value=200; g.gain.value=0;
+    o.connect(g); g.connect(master); o.start(); whine={o,g};
+  }
+}
+// short one-shot: seams, gravel grains, detent clicks
+function oneShot(kind, gain){
+  if(!AC || !S.sound) return;
+  const t=AC.currentTime, g=AC.createGain(); g.connect(master);
+  const noise = (type,f,q,dur) => {
+    const s=AC.createBufferSource(); s.buffer=burstBuf; s.playbackRate.value=.7+Math.random()*.6;
+    const fl=AC.createBiquadFilter(); fl.type=type; fl.frequency.value=f; fl.Q.value=q;
+    s.connect(fl); fl.connect(g); s.start(t); s.stop(t+dur);
+  };
+  const tone = (type,f,dur) => {
+    const o=AC.createOscillator(); o.type=type; o.frequency.setValueAtTime(f,t); o.frequency.exponentialRampToValueAtTime(f*.7,t+dur);
+    o.connect(g); o.start(t); o.stop(t+dur);
+  };
+  let dur=.05;
+  if(kind==="knock"){ tone("sine",140+Math.random()*30,.09); noise("bandpass",900,1.5,.04); dur=.09; }
+  else if(kind==="thud"){ tone("sine",75,.06); dur=.06; }
+  else if(kind==="fiber"){ noise("bandpass",2200,1.2,.02); dur=.02; }
+  else if(kind==="grain"){ noise("highpass",2500+Math.random()*3000,.7,.012); dur=.012; }
+  else { tone("triangle",1400,.03); dur=.03; }          // detent click
+  g.gain.setValueAtTime(gain,t); g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+}
+function buzz(){ if(S.haptics && navigator.vibrate) navigator.vibrate(4); }
+
+/* ---------------- physics loop ---------------- */
+const countEl=document.getElementById("count");
+let lastT=performance.now(), lastDetent=0, lastTickAt=0, lastBump=0, lastBumpAt=0, lastCountAt=0, turns=0, sheetOpen=false;
+const DETENTS=24;
+function frame(now){
+  const dt=Math.min(.05,(now-lastT)/1000); lastT=now;
+  const m=matById(S.mat);
+  if(dt>0){
+    if(dragging){
+      const raw = -accDy/dt; accDy=0;           // finger up → positive
+      fingerV += (raw-fingerV)*.55;
+      const tau = m.mass*.025;                  // heavier = lags behind the finger
+      vel += (fingerV-vel)*(1-Math.exp(-dt/tau));
+    } else {
+      vel *= Math.exp(-m.k*dt);
+      const dec=m.c*dt;
+      vel = Math.abs(vel)<=dec ? 0 : vel-Math.sign(vel)*dec;
+    }
+    vel=Math.max(-9000,Math.min(9000,vel));
+    if(vel!==0){ const dp=vel*dt*dpr/RAD; phase+=dp; turns+=Math.abs(dp)/(2*Math.PI); dirty=true; }
+  }
+  const sp=Math.abs(vel), sn=m.snd;
+  // seams built into the material (barrel staves, rope strands, rubber ribs)
+  if(m.bumps){
+    const b=Math.floor(phase/(2*Math.PI/m.bumps));
+    if(b!==lastBump){
+      const rate = sp*dpr/RAD*m.bumps/(2*Math.PI);           // seams per second
+      if(rate<28 && now-lastBumpAt>30){
+        oneShot(sn.bump, sn.bumpG*Math.min(1,.35+sp/900)); lastBumpAt=now;
+        if(!S.ticks && m.id==="barrel") buzz();
+      }
+      lastBump=b;
+    }
+  }
+  // optional detents
+  const det=Math.floor(phase/(2*Math.PI/DETENTS));
+  if(det!==lastDetent){ if(S.ticks && now-lastTickAt>25){ oneShot("click",.1); buzz(); lastTickAt=now; } lastDetent=det; }
+  // gravel / sand grains
+  if(sn.crackle && sp>30 && Math.random() < sn.crackle*Math.min(1,sp/1200)*dt*40) oneShot("grain", .05+.1*Math.random()*Math.min(1,sp/1500));
+  // continuous friction sound
+  if(AC && chain){
+    const t=AC.currentTime, lvl=Math.min(1,Math.pow(sp/1400,.75));
+    chain.out.gain.setTargetAtTime(S.sound ? sn.g*lvl*(dragging?1.1:1) : 0, t, .04);
+    for(const [fl,f] of chain.filters) if(fl.type!=="peaking") fl.frequency.setTargetAtTime(f*(1-sn.pitch*.45+Math.min(2,sp/1500)*sn.pitch*.7), t, .05);
+    if(whine){ whine.o.frequency.setTargetAtTime(180+sp*.22, t, .05); whine.g.gain.setTargetAtTime(S.sound? sn.whine*Math.min(1,sp/600):0, t, .08); }
+  }
+  if(dirty){ draw(); dirty=false; }
+  if(sheetOpen && now-lastCountAt>250){ lastCountAt=now; countEl.textContent = Math.floor(turns); }
+  requestAnimationFrame(frame);
+}
+
+/* ---------------- settings UI ---------------- */
+const body=document.body, matsEl=document.getElementById("mats"), matName=document.getElementById("matName");
+document.getElementById("gear").onclick=()=>{ body.classList.add("open"); sheetOpen=true; };
+document.getElementById("scrim").onclick=()=>{ body.classList.remove("open"); sheetOpen=false; };
+
+function renderMats(){
+  matsEl.innerHTML="";
+  for(const [gid,gname] of GROUPS){
+  const h=document.createElement("h3"); h.textContent=gname; matsEl.append(h);
+  for(const m of MATERIALS.filter(x=>x.group===gid)){
+    const b=document.createElement("button"); b.className="mat"; b.setAttribute("aria-pressed", m.id===S.mat);
+    const c=document.createElement("canvas"); c.width=c.height=120;
+    b.append(c); b.insertAdjacentHTML("beforeend", `<b>${m.name}</b><small>${m.note}</small>`);
+    b.onclick=()=>{ S.mat=m.id; save(); applyMat(); renderMats(); };
+    matsEl.append(b);
+    // swatch: small tile of the same texture, shaded like a roller
+    setTimeout(()=>{
+      const t=makeTexture(m.id,120,120,1.2), g=c.getContext("2d");
+      g.drawImage(t,0,0,120,120,0,0,120,120);
+      const gr=g.createLinearGradient(0,0,0,120);
+      gr.addColorStop(0,"rgba(0,0,0,.55)"); gr.addColorStop(.32,`rgba(255,255,255,${m.gloss*.5})`);
+      gr.addColorStop(.5,"rgba(0,0,0,0)"); gr.addColorStop(1,"rgba(0,0,0,.7)");
+      g.fillStyle=gr; g.fillRect(0,0,120,120);
+    },0);
+  }}
+}
+function applyMat(){
+  const m=matById(S.mat); matName.textContent=m.name; buildChain();
+  if(CW){ ensureTexture(); buildShade(); dirty=true; }
+}
+document.querySelectorAll(".sw").forEach(sw=>{
+  const k=sw.dataset.k; sw.checked=!!S[k];
+  sw.onchange=()=>{ S[k]=sw.checked; save(); if(sw.checked) audioInit(); };
+});
+
+let rt; window.addEventListener("resize", ()=>{ clearTimeout(rt); rt=setTimeout(resize,150); });
+renderMats(); applyMat(); resize(); requestAnimationFrame(frame);
+
+if("serviceWorker" in navigator && location.protocol==="https:") navigator.serviceWorker.register("sw.js");
+</script>
+</body>
+</html>
