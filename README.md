@@ -1,6 +1,8 @@
 # Válec
 
-Nekonečné točení válcem pro uklidnění prstů. Webová aplikace na plochu mobilu.
+Nekonečné točení kolem a mačkání tlačítek pro uklidnění prstů. Webová aplikace na plochu mobilu.
+
+Přepínač režimů (kolo / tlačítka) je vlevo nahoře, nastavení vpravo nahoře.
 
 ## Nahrání na GitHub (poprvé)
 1. github.com → vpravo nahoře **+** → **New repository**. Název např. `valec`, nech **Public**, klikni **Create repository**.
