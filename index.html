@@ -92,23 +92,33 @@
   .quiet{font-size:12px; color:var(--muted); opacity:.6; margin:22px 2px 0; font-variant-numeric:tabular-nums}
 
   /* button pad */
-  #pad{grid-template-columns:repeat(var(--n),var(--cell)); grid-template-rows:repeat(var(--n),var(--cell)); gap:var(--gap); padding:var(--gap);
-    justify-content:center; align-content:center; --cell:60px}
+  #pad{grid-template-columns:repeat(var(--cols),var(--cell)); grid-template-rows:repeat(var(--rows),var(--cell)); gap:var(--gap);
+    justify-content:center; align-content:center; --cell:60px; --gap:10px}
+  /* buttons mode: no frame, all the room for the tiles */
+  body[data-mode="pad"] #app{padding:calc(env(safe-area-inset-top) + 58px) calc(env(safe-area-inset-right) + 8px)
+    calc(env(safe-area-inset-bottom) + 12px) calc(env(safe-area-inset-left) + 8px)}
+  body[data-mode="pad"] #housing{background:none; box-shadow:none}
+  body[data-mode="pad"] #pad{inset:0; background:transparent; border-radius:0; overflow:visible}
+  .stepper{display:flex; align-items:center; gap:4px; background:var(--bg); border:1px solid var(--line); border-radius:12px; padding:3px}
+  .stepper button{width:38px; height:34px; border:0; border-radius:9px; background:var(--line); font-size:18px; cursor:pointer}
+  .stepper b{min-width:30px; text-align:center; font-variant-numeric:tabular-nums}
   .pb{--lc:255,184,108; position:relative; border-radius:var(--r); border:var(--bw) solid; padding:0; margin:0; cursor:pointer;
     transition:transform .07s, box-shadow .07s; touch-action:none}
-  #pad.dark .pb{background:linear-gradient(180deg,#484b51,#35373c); border-color:#696c72;
+  #pad.dark .pb{background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .5 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>") , linear-gradient(180deg,#43464c,#34363b); background-blend-mode:soft-light,normal; border-color:#5d6066;
     box-shadow:0 3px 0 #141519, 0 7px 14px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.1)}
-  #pad.light .pb{background:linear-gradient(180deg,#f6f5f2,#dfddd8); border-color:#c2c0bb;
+  #pad.light .pb{background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .5 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>") , linear-gradient(180deg,#f6f5f2,#dfddd8); background-blend-mode:soft-light,normal; border-color:#c9c7c2;
     box-shadow:0 3px 0 #a8a6a1, 0 7px 14px rgba(0,0,0,.16), inset 0 1px 0 #fff}
   .pb.down{transform:translateY(2px) scale(.985)}
   #pad.dark .pb.down{box-shadow:0 1px 0 #141519, 0 2px 5px rgba(0,0,0,.3), inset 0 2px 8px rgba(0,0,0,.35)}
   #pad.light .pb.down{box-shadow:0 1px 0 #a8a6a1, 0 2px 5px rgba(0,0,0,.12), inset 0 2px 8px rgba(0,0,0,.12)}
-  .glow,.halo{position:absolute; pointer-events:none; opacity:0; transition:opacity .9s ease-out}
+  /* lit: the whole tile glows like milky, frosted glass – soft, never a point of light */
+  .glow,.halo{position:absolute; pointer-events:none; opacity:0; transition:opacity 1.4s ease-out}
   .glow{inset:0; border-radius:calc(var(--r) - var(--bw));
-    background:radial-gradient(circle at 50% 48%, rgba(255,255,255,.9) 0%, rgba(var(--lc),1) 18%, rgba(var(--lc),.7) 55%, rgba(var(--lc),.35) 100%)}
-  .halo{inset:calc(var(--bw) * -1); border-radius:var(--r);
-    box-shadow:0 0 24px 4px rgba(var(--lc),.7), 0 0 0 var(--bw) rgba(var(--lc),.95)}
-  .pb.on .glow,.pb.on .halo{opacity:1; transition:opacity .2s}
+    background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .5 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"), radial-gradient(ellipse 90% 85% at 50% 42%, rgba(var(--lc),.72), rgba(var(--lc),.5) 65%, rgba(var(--lc),.38) 100%);
+    background-blend-mode:soft-light,normal;
+    box-shadow:inset 0 0 22px rgba(255,255,255,.14), inset 0 1px 0 rgba(255,255,255,.25)}
+  .halo{inset:calc(var(--bw) * -1); border-radius:var(--r); box-shadow:0 0 30px 0 rgba(var(--lc),.28)}
+  .pb.on .glow,.pb.on .halo{opacity:.85; transition:opacity .35s ease-out}
 </style>
 </head>
 <body data-mode="roll">
@@ -143,14 +153,17 @@
   </div>
 
   <div data-for="pad">
-    <h2>Počet tlačítek</h2>
-    <div class="seg wide" data-k="grid" data-num="1"><button data-v="2">2×2</button><button data-v="3">3×3</button><button data-v="4">4×4</button><button data-v="5">5×5</button><button data-v="6">6×6</button><button data-v="7">7×7</button></div>
+    <h2>Rozložení</h2>
+    <div class="row" style="border-top:0"><span>Sloupce</span><div class="stepper" data-k="cols" data-min="1" data-max="8"><button aria-label="Méně">−</button><b></b><button aria-label="Více">+</button></div></div>
+    <div class="row"><span>Řady</span><div class="stepper" data-k="rows" data-min="1" data-max="16"><button aria-label="Méně">−</button><b></b><button aria-label="Více">+</button></div></div>
+    <div class="seg wide" style="margin-top:6px"><button id="fillBtn">Vyplnit řadami celý displej</button></div>
     <h2>Tlačítka</h2>
     <div class="seg wide" data-k="padStyle"><button data-v="dark">Tmavá</button><button data-v="light">Světlá</button></div>
     <h2>Světlo</h2>
     <div class="swatches" id="lightSw"></div>
     <h2>Po kliknutí</h2>
     <div class="seg wide" data-k="padMode"><button data-v="fade">Pohasne</button><button data-v="toggle">Zůstane svítit</button></div>
+    <p class="quiet" style="opacity:.8;margin-top:8px">Přejeď prstem přes víc tlačítek a rozsvítí se jedno po druhém.</p>
     <label class="row" style="margin-top:8px"><span>Vlna do okolí<small>sousední tlačítka se lehce rozsvítí</small></span><input type="checkbox" class="sw" data-k="wave"></label>
   </div>
 
@@ -217,9 +230,10 @@ const LIGHTS = ["#ffb86c","#fff1c9","#8cc4ff","#ff7a8a","#a6f0a0","rainbow"];
 
 /* ---------------- settings + stats ---------------- */
 const DEFAULTS = {mode:"roll", mat:"granite", tint:{solid:"#141414", velvet:"#76202c"}, view:"3d", fx:"sparks",
-  theme:"#0d0e10", sound:true, ticks:false, haptics:true, grid:6, padStyle:"dark", light:"#ffb86c", padMode:"fade", wave:true};
+  theme:"#0d0e10", sound:true, ticks:false, haptics:true, cols:4, rows:6, padStyle:"dark", light:"#ffb86c", padMode:"fade", wave:true};
 let S = JSON.parse(JSON.stringify(DEFAULTS));
 try { const st=JSON.parse(localStorage.getItem("valec-settings")||"{}"); Object.assign(S, st); S.tint={...DEFAULTS.tint, ...(st.tint||{})}; } catch(e){}
+if(S.grid && !localStorage.getItem("valec-layout")){ S.cols=S.rows=+S.grid; delete S.grid; try{localStorage.setItem("valec-layout","1")}catch(e){} }
 const save = () => { try { localStorage.setItem("valec-settings", JSON.stringify(S)); } catch(e){} };
 let STATS = {turns:0, clicks:0};
 try { Object.assign(STATS, JSON.parse(localStorage.getItem("valec-stats")||"{}")); } catch(e){}
@@ -803,56 +817,99 @@ function frame(now){
 }
 
 /* ---------------- button pad ---------------- */
-const pad=document.getElementById("pad"), downMap=new Map();
+const pad=document.getElementById("pad");
+let cellPx=60;
 function buildPad(){
-  const n=+S.grid; pad.innerHTML=""; pad.className=S.padStyle;
-  pad.style.setProperty("--n",n);
-  pad.style.setProperty("--gap", (n<=3?14:n<=5?10:7)+"px");
-  pad.style.setProperty("--bw", Math.max(2, 6-n*.5)+"px");
-  for(let i=0;i<n*n;i++){
+  const cols=+S.cols, rows=+S.rows; pad.innerHTML=""; pad.className=S.padStyle;
+  pad.style.setProperty("--cols",cols); pad.style.setProperty("--rows",rows);
+  for(let i=0;i<cols*rows;i++){
     const b=document.createElement("button"); b.className="pb"; b.dataset.i=i; b.setAttribute("aria-label","Tlačítko");
     b.innerHTML='<span class="glow"></span><span class="halo"></span>'; pad.append(b);
   }
   requestAnimationFrame(sizePad);
 }
+// tiles are always square: biggest square that fits cols × rows
 function sizePad(){
-  const n=+S.grid, cs=getComputedStyle(pad), gap=parseFloat(cs.getPropertyValue("--gap"))||10;
-  const room=Math.min(pad.clientWidth, pad.clientHeight) - gap*2 - gap*(n-1);
-  const cell=Math.floor(room/n);
-  pad.style.setProperty("--cell", cell+"px");
-  pad.style.setProperty("--r", Math.round(cell*.2)+"px");
-}
-function lightColor(){
-  if(S.light==="rainbow"){ const h=Math.random()*360, c=hsl(h,.9,.62); return c.join(","); }
-  return hex2rgb(S.light).join(",");
+  const cols=+S.cols, rows=+S.rows, W=pad.clientWidth, H=pad.clientHeight;
+  if(!W) return;
+  let gap=10, cell=0;
+  for(let i=0;i<2;i++){ cell=Math.floor(Math.min((W-gap*(cols-1))/cols, (H-gap*(rows-1))/rows)); gap=Math.max(5,Math.min(14,Math.round(cell*.09))); }
+  cellPx=cell;
+  pad.style.setProperty("--gap",gap+"px"); pad.style.setProperty("--cell",cell+"px");
+  pad.style.setProperty("--r",Math.round(cell*.2)+"px"); pad.style.setProperty("--bw",Math.max(1.5,Math.min(4,cell*.03))+"px");
 }
 function hsl(h,s,l){ const f=n=>{ const k=(n+h/30)%12, a=s*Math.min(l,1-l); return Math.round(255*(l-a*Math.max(-1,Math.min(k-3,9-k,1)))); }; return [f(0),f(8),f(4)]; }
-function flash(b, a, delay){
-  for(const el of b.children) el.animate([{opacity:0},{opacity:a, offset:.07},{opacity:0}], {duration:1500, delay, easing:"ease-out"});
+// soft, milky version of the chosen light colour
+function lightColor(st){
+  const c = S.light==="rainbow" ? hsl((st.hue+=24)%360,.75,.62) : hex2rgb(S.light);
+  return mix(c,[255,255,255],.22).join(",");
 }
-function press(b){
-  audioInit(); STATS.clicks++;
-  oneShot("press",.22); buzz(6);
-  const col=lightColor();
+function flash(b, a, delay, dur){
+  for(const el of b.children) el.animate(
+    [{opacity:0, easing:"ease-out"},{opacity:a, offset:.07, easing:"cubic-bezier(.3,.1,.3,1)"},{opacity:0}],
+    {duration:dur||2300, delay});
+}
+function enter(b, st, first){
+  b.classList.add("down"); STATS.clicks++;
+  oneShot("press", first?.2:.1); buzz(first?6:3);
+  const col=lightColor(st);
   if(S.padMode==="toggle"){
-    if(b.classList.contains("on")) b.classList.remove("on");
-    else { b.style.setProperty("--lc",col); b.classList.add("on"); }
-  } else { b.style.setProperty("--lc",col); flash(b,1,0); }
+    const on=b.classList.contains("on");
+    if(st.paint==="on" && !on){ b.style.setProperty("--lc",col); b.classList.add("on"); }
+    else if(st.paint==="off" && on) b.classList.remove("on");
+  } else { b.style.setProperty("--lc",col); flash(b,.85,0); }
   if(S.wave){
-    const n=+S.grid, i=+b.dataset.i, x=i%n, y=Math.floor(i/n);
+    const cols=+S.cols, i=+b.dataset.i, x=i%cols, y=Math.floor(i/cols);
     for(const nb of pad.children){
-      const j=+nb.dataset.i, d=Math.max(Math.abs(j%n-x), Math.abs(Math.floor(j/n)-y));
-      if(!d || d>2 || nb.classList.contains("on")) continue;
-      nb.style.setProperty("--lc",col); flash(nb, d===1?.42:.16, d*70);
+      const j=+nb.dataset.i, d=Math.max(Math.abs(j%cols-x), Math.abs(Math.floor(j/cols)-y));
+      if(!d || d>2 || nb.classList.contains("on") || nb===st.prev) continue;
+      nb.style.setProperty("--lc",col); flash(nb, d===1?.28:.1, d*80, 1800);
     }
   }
+  st.prev=b;
 }
+// one entry per finger: which tile it is on, so a swipe lights tiles one after another
+const fingers=new Map();
+const tileAt=(x,y)=>{ const el=document.elementFromPoint(x,y); return el && el.closest ? el.closest("#pad .pb") : null; };
+// a swipe can start anywhere – also in the gaps or the empty space around the tiles
 pad.addEventListener("pointerdown", e=>{
-  const b=e.target.closest(".pb"); if(!b) return;
-  e.preventDefault(); downMap.set(e.pointerId,b); b.classList.add("down"); press(b);
+  e.preventDefault(); audioInit();
+  if(e.target.hasPointerCapture && e.target.hasPointerCapture(e.pointerId)) e.target.releasePointerCapture(e.pointerId);
+  const b=e.target.closest(".pb");
+  const st={b, x:e.clientX, y:e.clientY, hue:Math.random()*360, prev:null, paint:null};
+  fingers.set(e.pointerId, st);
+  if(b){ st.paint = S.padMode==="toggle" ? (b.classList.contains("on")?"off":"on") : null; enter(b, st, true); }
 });
-const upPad = e=>{ const b=downMap.get(e.pointerId); if(!b) return; downMap.delete(e.pointerId); b.classList.remove("down"); oneShot("release",.12); };
+pad.addEventListener("pointermove", e=>{
+  const st=fingers.get(e.pointerId); if(!st) return;
+  // walk the path in small steps so a fast swipe doesn't skip tiles
+  const dx=e.clientX-st.x, dy=e.clientY-st.y, n=Math.max(1,Math.ceil(Math.hypot(dx,dy)/Math.max(8,cellPx*.3)));
+  for(let k=1;k<=n;k++){
+    const t=tileAt(st.x+dx*k/n, st.y+dy*k/n);
+    if(t!==st.b){
+      if(st.b) st.b.classList.remove("down");
+      st.b=t;
+      if(t){ if(!st.paint) st.paint = t.classList.contains("on")?"off":"on"; enter(t, st, !st.prev); }
+    }
+  }
+  st.x=e.clientX; st.y=e.clientY;
+});
+const upPad = e=>{ const st=fingers.get(e.pointerId); if(!st) return; fingers.delete(e.pointerId); if(st.b){ st.b.classList.remove("down"); oneShot("release",.1); } };
 window.addEventListener("pointerup", upPad); window.addEventListener("pointercancel", upPad);
+
+// layout steppers
+document.querySelectorAll(".stepper").forEach(el=>{
+  const k=el.dataset.k, mn=+el.dataset.min, mx=+el.dataset.max, out=el.querySelector("b"), [minus,plus]=el.querySelectorAll("button");
+  const show=()=>out.textContent=S[k];
+  minus.onclick=()=>{ S[k]=Math.max(mn,+S[k]-1); save(); show(); buildPad(); };
+  plus.onclick=()=>{ S[k]=Math.min(mx,+S[k]+1); save(); show(); buildPad(); };
+  el.show=show; show();
+});
+document.getElementById("fillBtn").onclick=()=>{
+  const cols=+S.cols, W=pad.clientWidth, H=pad.clientHeight, gap=10, cell=(W-gap*(cols-1))/cols;
+  S.rows=Math.max(1,Math.min(16,Math.floor((H+gap)/(cell+gap)))); save();
+  document.querySelectorAll(".stepper").forEach(x=>x.show()); buildPad();
+};
 
 /* ---------------- theme ---------------- */
 function applyTheme(){
@@ -954,7 +1011,7 @@ document.querySelectorAll(".seg[data-k]").forEach(seg=>{
   seg.querySelectorAll("button").forEach(b=>b.onclick=()=>{
     S[k] = seg.dataset.num ? +b.dataset.v : b.dataset.v; save(); mark();
     if(k==="view") resize();
-    if(k==="grid" || k==="padStyle") buildPad();
+    if(k==="padStyle") buildPad();
     if(k==="padMode") pad.querySelectorAll(".pb.on").forEach(x=>x.classList.remove("on"));
   });
   mark();
